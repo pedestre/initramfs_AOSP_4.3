@@ -1,0 +1,40 @@
+#!/sbin/busybox sh
+cd /;
+
+BB=/sbin/busybox
+
+$BB mount -t proc proc /proc;
+#$BB mount -t sysfs sysfs /sys;
+#if [ -e /sys/devices/virtual/sec/sec_key/set_homekey ]; then
+#	echo 102 > /sys/devices/virtual/sec/sec_key/set_homekey;
+#fi;
+
+# set "/" rw
+$BB mount -t rootfs -o remount,rw rootfs;
+
+if $BB grep -q bootmode=2 /proc/cmdline; then
+	# recovery mode
+	$BB cp -a /recovery.rc /init.rc;	
+	mknod /dev/block/mmcblk0p1 b 179 1
+	mknod /dev/block/mmcblk0p7 b 179 7
+	mknod /dev/block/mmcblk1p1 b 179 9
+	mknod /dev/block/mmcblk0p9 b 259 1
+	mknod /dev/block/mmcblk0p10 b 259 2
+	mknod /dev/block/mmcblk0p11 b 259 3
+	mknod /dev/block/mmcblk0p12 b 259 4
+	mknod /dev/block/loop0 b 7 0
+	exec /sbin/init.recovery;
+fi;
+
+if $BB grep -q 1 /sys/class/power_supply/battery/batt_lp_charging; then
+	# low power mode
+	#echo "0" > /proc/sys/kernel/rom_feature_set;
+	#$BB cp /res/images/recovery-icon.png /res/images/icon_clockwork.png;
+	$BB cp -a lpm.rc init.rc;
+	$BB rm init.smdk4210.rc;
+	exec /sbin/init.recovery;
+fi;
+
+$BB cp -a init_system.rc init.rc;
+exec /sbin/init.samsung
+
